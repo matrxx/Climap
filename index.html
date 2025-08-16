@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genmap - Climate Impact Visualizer</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Welcome Screen -->
+    <div class="welcome-screen" id="welcomeScreen">
+        <div class="climate-visualization"></div>
+        <div class="welcome-content">
+            <h1 class="main-title">Genmap</h1>
+            <p class="climate-subtitle">Climate Impact Visualizer</p>
+            <p class="description">
+                Explore the future of our planet with advanced 3D climate modeling.
+                Visualize sea level rise, urban heat islands, and environmental changes in real-time.
+            </p>
+            <form class="search-form" id="searchForm">
+                <input type="text" class="location-input" id="locationInput" 
+                       placeholder="Enter a coastal city to analyze climate impact..." autocomplete="off">
+                <button type="submit" class="analyze-button">Analyze</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Map Interface -->
+    <div class="map-interface" id="mapInterface">
+        <header class="control-header">
+            <div class="logo-section">
+                <a href="#" class="header-logo" id="logoLink">Genmap</a>
+                <div class="climate-indicator">Climate Emergency</div>
+            </div>
+            <div class="search-section">
+                <input type="text" class="header-search" id="headerSearch" 
+                       placeholder="Search location for climate analysis...">
+            </div>
+            <div class="climate-controls">
+                <button class="climate-btn active" id="seaLevelBtn">Sea Level</button>
+                <button class="climate-btn" id="temperatureBtn">Temperature</button>
+                <button class="climate-btn" id="precipitationBtn">Precipitation</button>
+                <button class="climate-btn" id="extremeBtn">Extreme Events</button>
+            </div>
+        </header>
+
+        <!-- 3D Scene Container -->
+        <div id="scene-container"></div>
+
+        <!-- Climate Data Panel -->
+        <div class="climate-panel" id="climatePanel">
+            <div class="panel-header">Climate Impact Analysis</div>
+            <div class="panel-content">
+                <div class="climate-metric">
+                    <span class="metric-label">Current Temperature</span>
+                    <span class="metric-value warning" id="currentTemp">+2.1°C</span>
+                </div>
+                <div class="climate-metric">
+                    <span class="metric-label">Sea Level Rise</span>
+                    <span class="metric-value danger" id="seaLevelRise">+0.85m</span>
+                </div>
+                <div class="climate-metric">
+                    <span class="metric-label">Risk Level</span>
+                    <span class="metric-value danger" id="riskLevel">Critical</span>
+                </div>
+                <div class="climate-metric">
+                    <span class="metric-label">Affected Population</span>
+                    <span class="metric-value warning" id="affectedPop">~125,000</span>
+                </div>
+                <div class="climate-metric">
+                    <span class="metric-label">Economic Impact</span>
+                    <span class="metric-value danger" id="economicImpact">$2.8B</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sea Level Info Panel -->
+        <div class="sea-level-info" id="seaLevelInfo">
+            <div class="sea-level-header">Sea Level Projection</div>
+            <div class="sea-level-content">
+                <div class="water-level-display">
+                    <div class="water-level-value" id="waterLevelValue">+0.85</div>
+                    <div class="water-level-unit">meters above current level</div>
+                </div>
+                <div class="climate-metric">
+                    <span class="metric-label">Scenario</span>
+                    <span class="metric-value warning" id="climateScenario">RCP 4.5</span>
+                </div>
+                <div class="climate-metric">
+                    <span class="metric-label">Confidence</span>
+                    <span class="metric-value safe" id="confidence">High (87%)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timeline Controller -->
+        <div class="timeline-controller" id="timelineController">
+            <div class="timeline-header">
+                <span class="timeline-title">Climate Timeline</span>
+                <span class="current-year" id="currentYear">2024</span>
+            </div>
+            <input type="range" class="timeline-slider" id="timelineSlider" 
+                   min="2024" max="2100" value="2024" step="1">
+            <div class="timeline-labels">
+                <span>2024</span>
+                <span>2040</span>
+                <span>2060</span>
+                <span>2080</span>
+                <span>2100</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loadingText">Initializing climate models...</div>
+    </div>
+
+    <!-- External Libraries -->
+    <script src="https://unpkg.com/three@0.150.1/build/three.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Main Application -->
+    <script src="js/app.js"></script>
+</body>
+</html>
