@@ -1,11 +1,13 @@
 /**
- * Genmap Climate Visualizer - Complete Application
+ * Genmap Climate Visualizer - Complete Application avec vraies données météo
  */
 
 // Configuration
 const CONFIG = {
-    WEATHER_API_KEY: '4b8f8b9e4d8b4e5a5f2d8c3e1f5a2b7c',
+    WEATHER_API_KEY: 'demo',
     NOMINATIM_BASE_URL: 'https://nominatim.openstreetmap.org',
+    OPENWEATHER_BASE_URL: 'https://api.openweathermap.org/data/2.5/weather',
+    WEATHER_API_BASE_URL: 'https://api.weatherapi.com/v1/current.json',
     DEFAULT_LOCATION: { lat: 40.7128, lng: -74.0060, name: "New York City" }
 };
 
@@ -151,7 +153,7 @@ class GenmapApp {
             this.showClimateInterface();
         } catch (error) {
             console.error('Search error:', error);
-            await this.showDemoData();
+            await this.showDemoDataWithFallback(query);
         } finally {
             this.hideLoading();
         }
@@ -170,7 +172,7 @@ class GenmapApp {
             await this.loadLocationData(query);
         } catch (error) {
             console.error('Header search error:', error);
-            await this.showDemoData();
+            await this.showDemoDataWithFallback(query);
         } finally {
             this.hideLoading();
         }
@@ -242,27 +244,187 @@ class GenmapApp {
     async loadLocationData(location) {
         console.log(`🗺️ Loading data for: ${location}`);
         
-        // Geocode location
-        const coords = await this.geocodeLocation(location);
-        this.selectedLocation = coords;
+        try {
+            // Geocode location
+            const coords = await this.geocodeLocation(location);
+            this.selectedLocation = coords;
 
-        // Check if this is a major city with custom 3D model
-        const cityModel = this.detectMajorCity(coords, location);
-        this.selectedLocation.cityModel = cityModel;
+            // Get real weather data
+            const weatherData = await this.getWeatherData(coords.lat, coords.lng);
+            
+            // Check if this is a major city with custom 3D model
+            const cityModel = this.detectMajorCity(coords, location);
+            this.selectedLocation.cityModel = cityModel;
+            this.selectedLocation.weather = weatherData;
 
-        // Generate climate data
-        this.climateData = this.generateClimateProjections(coords.lat, coords.lng);
+            // Generate climate data with real temperature
+            this.climateData = this.generateClimateProjections(coords.lat, coords.lng, weatherData);
 
-        // Update UI
-        this.updateLocationDisplay(coords.name || location);
-        this.updateClimateMetrics();
+            // Update UI
+            this.updateLocationDisplay(coords.name || location);
+            this.updateClimateMetrics(weatherData);
 
-        // Update 3D scene with city-specific model
-        if (this.scene3D) {
-            this.scene3D.loadCityModel(cityModel);
+            // Update 3D scene with city-specific model
+            if (this.scene3D) {
+                this.scene3D.loadCityModel(cityModel);
+            }
+
+            console.log(`✅ Data loaded for: ${coords.name || location}${cityModel ? ' (Custom 3D Model)' : ''}`);
+        } catch (error) {
+            console.error('Error loading location data:', error);
+            // Fallback to demo data if API fails
+            await this.showDemoDataWithFallback(location);
+        }
+    }
+
+    async getWeatherData(lat, lng) {
+        console.log('🌡️ Fetching real weather data...');
+        
+        // Try multiple weather APIs for reliability
+        const weatherApis = [
+            {
+                name: 'Open-Meteo (Free)',
+                url: `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true&temperature_unit=celsius`,
+                parser: (data) => ({
+                    temperature: data.current_weather?.temperature || null,
+                    humidity: null,
+                    description: this.getWeatherDescription(data.current_weather?.weathercode),
+                    windSpeed: data.current_weather?.windspeed || null,
+                    pressure: null
+                })
+            },
+            {
+                name: 'OpenWeatherMap (Free)',
+                url: `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=demo&units=metric`,
+                parser: (data) => ({
+                    temperature: data.main?.temp || null,
+                    humidity: data.main?.humidity || null,
+                    description: data.weather?.[0]?.description || null,
+                    windSpeed: data.wind?.speed || null,
+                    pressure: data.main?.pressure || null
+                })
+            },
+            {
+                name: 'WeatherAPI (Free)',
+                url: `https://api.weatherapi.com/v1/current.json?key=demo&q=${lat},${lng}&aqi=no`,
+                parser: (data) => ({
+                    temperature: data.current?.temp_c || null,
+                    humidity: data.current?.humidity || null,
+                    description: data.current?.condition?.text || null,
+                    windSpeed: data.current?.wind_kph ? data.current.wind_kph / 3.6 : null,
+                    pressure: data.current?.pressure_mb || null
+                })
+            }
+        ];
+
+        // Try each API until one works
+        for (const api of weatherApis) {
+            try {
+                console.log(`Trying ${api.name}...`);
+                const response = await this.fetchWithTimeout(api.url, 5000);
+                
+                if (!response.ok) {
+                    console.warn(`${api.name} returned ${response.status}`);
+                    continue;
+                }
+                
+                const data = await response.json();
+                const weatherData = api.parser(data);
+                
+                if (weatherData.temperature !== null) {
+                    console.log(`✅ Weather data from ${api.name}:`, weatherData);
+                    return weatherData;
+                }
+            } catch (error) {
+                console.warn(`${api.name} failed:`, error.message);
+                continue;
+            }
         }
 
-        console.log(`✅ Data loaded for: ${coords.name || location}${cityModel ? ' (Custom 3D Model)' : ''}`);
+        // If all APIs fail, return estimated temperature based on location
+        console.warn('All weather APIs failed, using estimated temperature');
+        return this.getEstimatedWeatherData(lat, lng);
+    }
+
+    async fetchWithTimeout(url, timeout = 5000) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        
+        try {
+            const response = await fetch(url, {
+                signal: controller.signal,
+                headers: {
+                    'Accept': 'application/json',
+                    'User-Agent': 'Genmap-Climate-Visualizer/1.0'
+                }
+            });
+            clearTimeout(timeoutId);
+            return response;
+        } catch (error) {
+            clearTimeout(timeoutId);
+            throw error;
+        }
+    }
+
+    getWeatherDescription(weatherCode) {
+        // WMO Weather interpretation codes
+        const codes = {
+            0: 'Clear sky',
+            1: 'Mainly clear',
+            2: 'Partly cloudy',
+            3: 'Overcast',
+            45: 'Fog',
+            48: 'Depositing rime fog',
+            51: 'Light drizzle',
+            53: 'Moderate drizzle',
+            55: 'Dense drizzle',
+            61: 'Slight rain',
+            63: 'Moderate rain',
+            65: 'Heavy rain',
+            71: 'Slight snow fall',
+            73: 'Moderate snow fall',
+            75: 'Heavy snow fall',
+            95: 'Thunderstorm'
+        };
+        
+        return codes[weatherCode] || 'Unknown weather';
+    }
+
+    getEstimatedWeatherData(lat, lng) {
+        // Estimate temperature based on latitude and season
+        const month = new Date().getMonth() + 1; // 1-12
+        const isNorthernHemisphere = lat > 0;
+        
+        // Seasonal adjustment
+        let seasonalAdjustment = 0;
+        if (isNorthernHemisphere) {
+            // Northern hemisphere
+            if (month >= 6 && month <= 8) seasonalAdjustment = 8; // Summer
+            else if (month >= 12 || month <= 2) seasonalAdjustment = -8; // Winter
+            else if (month >= 3 && month <= 5) seasonalAdjustment = 2; // Spring
+            else seasonalAdjustment = -2; // Fall
+        } else {
+            // Southern hemisphere - opposite seasons
+            if (month >= 6 && month <= 8) seasonalAdjustment = -8; // Winter
+            else if (month >= 12 || month <= 2) seasonalAdjustment = 8; // Summer
+            else if (month >= 3 && month <= 5) seasonalAdjustment = -2; // Fall
+            else seasonalAdjustment = 2; // Spring
+        }
+        
+        // Base temperature calculation based on latitude
+        const baseTemp = 30 - (Math.abs(lat) * 0.6) + seasonalAdjustment;
+        const temperature = Math.round((baseTemp + (Math.random() - 0.5) * 4) * 10) / 10;
+        
+        console.log(`📊 Estimated temperature for lat ${lat}: ${temperature}°C`);
+        
+        return {
+            temperature: temperature,
+            humidity: Math.round(40 + Math.random() * 40),
+            description: 'Partly cloudy',
+            windSpeed: Math.round((5 + Math.random() * 15) * 10) / 10,
+            pressure: Math.round(1000 + Math.random() * 50),
+            isEstimated: true
+        };
     }
 
     detectMajorCity(coords, locationName) {
@@ -311,43 +473,69 @@ class GenmapApp {
         }
     }
 
-    generateClimateProjections(lat, lng) {
+    generateClimateProjections(lat, lng, weatherData = null) {
         console.log('📊 Generating climate projections...');
         
         const projections = {};
         const isCoastal = Math.random() > 0.3; // Simplified coastal detection
+        const currentTemp = weatherData?.temperature || this.getEstimatedWeatherData(lat, lng).temperature;
         
         for (let year = 2024; year <= 2100; year += 5) {
             const progress = (year - 2024) / (2100 - 2024);
             const tempIncrease = progress * 2.4 + Math.random() * 0.5;
+            const futureTemp = currentTemp + tempIncrease;
             const seaLevelRise = isCoastal ? progress * 0.84 + Math.random() * 0.1 : 0;
             
             projections[year] = {
                 year,
+                currentTemperature: currentTemp,
                 temperatureIncrease: tempIncrease,
+                futureTemperature: futureTemp,
                 seaLevelRise: seaLevelRise,
                 affectedPopulation: Math.floor(100000 + progress * 50000),
-                economicImpact: progress * 2000000000
+                economicImpact: progress * 2000000000,
+                weatherData: weatherData
             };
         }
         
         return projections;
     }
 
-    async showDemoData() {
-        console.log('🎭 Showing demo data...');
+    async showDemoDataWithFallback(originalLocation) {
+        console.log('🎭 Showing demo data with fallback temperature...');
         
         this.selectedLocation = CONFIG.DEFAULT_LOCATION;
+        
+        // Try to get weather data for default location
+        let weatherData;
+        try {
+            weatherData = await this.getWeatherData(
+                CONFIG.DEFAULT_LOCATION.lat, 
+                CONFIG.DEFAULT_LOCATION.lng
+            );
+        } catch (error) {
+            console.warn('Weather API failed for demo location, using estimated data');
+            weatherData = this.getEstimatedWeatherData(
+                CONFIG.DEFAULT_LOCATION.lat, 
+                CONFIG.DEFAULT_LOCATION.lng
+            );
+        }
+        
+        this.selectedLocation.weather = weatherData;
         this.climateData = this.generateClimateProjections(
             CONFIG.DEFAULT_LOCATION.lat, 
-            CONFIG.DEFAULT_LOCATION.lng
+            CONFIG.DEFAULT_LOCATION.lng,
+            weatherData
         );
         
         this.updateLocationDisplay(`${CONFIG.DEFAULT_LOCATION.name} (Demo)`);
-        this.updateClimateMetrics();
+        this.updateClimateMetrics(weatherData);
         this.showClimateInterface();
         
-        this.showNotification('Location not found. Showing demo data for ' + CONFIG.DEFAULT_LOCATION.name);
+        const message = originalLocation ? 
+            `Location "${originalLocation}" not found. Showing demo data for ${CONFIG.DEFAULT_LOCATION.name}` :
+            `Showing demo data for ${CONFIG.DEFAULT_LOCATION.name}`;
+        this.showNotification(message);
     }
 
     showClimateInterface() {
@@ -403,6 +591,22 @@ class GenmapApp {
     }
 
     updateTimelineMetrics(projection) {
+        // Update temperature display
+        const tempElement = document.getElementById('currentTemp');
+        if (tempElement && projection.futureTemperature) {
+            const temp = projection.futureTemperature.toFixed(1);
+            tempElement.textContent = `${temp}°C`;
+            
+            // Color coding based on temperature
+            if (projection.futureTemperature > 35) {
+                tempElement.className = 'metric-value danger';
+            } else if (projection.futureTemperature > 28) {
+                tempElement.className = 'metric-value warning';
+            } else {
+                tempElement.className = 'metric-value safe';
+            }
+        }
+
         // Update sea level rise
         const seaLevelElement = document.getElementById('seaLevelRise');
         if (seaLevelElement) {
@@ -449,20 +653,91 @@ class GenmapApp {
         riskElement.className = riskClass;
     }
 
-    updateClimateMetrics() {
-        // Update current temperature (simulated)
+    updateClimateMetrics(weatherData = null) {
+        // Update current temperature with real data
         const tempElement = document.getElementById('currentTemp');
-        if (tempElement && this.selectedLocation) {
-            const baseTemp = 15 + Math.random() * 15;
-            tempElement.textContent = `${baseTemp.toFixed(1)}°C`;
-            
-            if (baseTemp > 30) {
-                tempElement.className = 'metric-value danger';
-            } else if (baseTemp > 25) {
-                tempElement.className = 'metric-value warning';
+        if (tempElement) {
+            if (weatherData && weatherData.temperature !== null) {
+                const temp = weatherData.temperature.toFixed(1);
+                tempElement.textContent = `${temp}°C`;
+                
+                // Add indicator if data is estimated
+                if (weatherData.isEstimated) {
+                    tempElement.textContent += ' (est.)';
+                }
+                
+                // Color coding based on real temperature
+                if (weatherData.temperature > 35) {
+                    tempElement.className = 'metric-value danger';
+                } else if (weatherData.temperature > 28) {
+                    tempElement.className = 'metric-value warning';
+                } else if (weatherData.temperature < 0) {
+                    tempElement.className = 'metric-value safe';
+                } else {
+                    tempElement.className = 'metric-value';
+                }
             } else {
-                tempElement.className = 'metric-value safe';
+                // Fallback to estimated temperature
+                const estimatedWeather = this.getEstimatedWeatherData(
+                    this.selectedLocation?.lat || 40.7128, 
+                    this.selectedLocation?.lng || -74.0060
+                );
+                tempElement.textContent = `${estimatedWeather.temperature.toFixed(1)}°C (est.)`;
+                tempElement.className = 'metric-value warning';
             }
+        }
+
+        // Display additional weather info if available
+        this.displayAdditionalWeatherInfo(weatherData);
+    }
+
+    displayAdditionalWeatherInfo(weatherData) {
+        if (!weatherData) {
+            console.log('❌ No weather data to display');
+            return;
+        }
+
+        console.log('📊 Displaying additional weather info:', weatherData);
+
+        // Update weather conditions
+        const conditionsElement = document.getElementById('weatherConditions');
+        if (conditionsElement && weatherData.description) {
+            conditionsElement.textContent = weatherData.description;
+            conditionsElement.className = 'metric-value';
+            
+            if (weatherData.isEstimated) {
+                conditionsElement.textContent += ' (estimated)';
+            }
+        }
+
+        // Update humidity
+        const humidityElement = document.getElementById('humidity');
+        if (humidityElement && weatherData.humidity !== null) {
+            humidityElement.textContent = `${weatherData.humidity}%`;
+            humidityElement.className = 'metric-value';
+            
+            if (weatherData.isEstimated) {
+                humidityElement.textContent += ' (est.)';
+            }
+        }
+
+        // Log data source info
+        if (weatherData.source) {
+            console.log(`🌍 Weather data source: ${weatherData.source}`);
+        }
+        
+        if (weatherData.windSpeed) {
+            console.log(`🌪️ Wind Speed: ${weatherData.windSpeed} m/s`);
+        }
+        if (weatherData.pressure) {
+            console.log(`📊 Pressure: ${weatherData.pressure} hPa`);
+        }
+        
+        if (weatherData.isEstimated) {
+            console.log('⚠️ WARNING: This is ESTIMATED data, not real weather data');
+            this.showNotification('⚠️ Real weather APIs unavailable. Showing estimated data.');
+        } else {
+            console.log(`✅ SUCCESS: Real-time weather data from ${weatherData.source}`);
         }
     }
 
@@ -964,5 +1239,5 @@ class Scene3DManager {
 // Initialize application
 document.addEventListener('DOMContentLoaded', () => {
     window.genmapApp = new GenmapApp();
-    console.log('🌍 Genmap loaded successfully with landmark support');
+    console.log('🌍 Genmap loaded successfully with real weather data support');
 });
