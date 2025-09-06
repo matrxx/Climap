@@ -221,15 +221,16 @@ body {
 }
 
 .climate-btn {
-    padding: 10px 18px;
+    padding: 10px 16px;
     background: rgba(30, 41, 59, 0.8);
     border: 1px solid #475569;
     border-right: none;
     cursor: pointer;
     transition: all 0.3s ease;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 500;
     color: #cbd5e1;
+    white-space: nowrap;
 }
 
 .climate-btn:last-child {
@@ -266,6 +267,8 @@ body {
     z-index: 300;
     transform: translateX(-100%);
     transition: all 0.5s ease-out;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
 }
 
 .climate-panel.active {
@@ -273,12 +276,15 @@ body {
 }
 
 .panel-header {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
     color: white;
     padding: 16px 20px;
     font-weight: 600;
     font-size: 1rem;
     border-radius: 8px 8px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .panel-content {
@@ -305,6 +311,7 @@ body {
 .metric-value {
     font-weight: 600;
     font-size: 1rem;
+    color: #ffffff;
 }
 
 .metric-value.danger {
@@ -319,14 +326,14 @@ body {
     color: #10b981;
 }
 
-/* Sea Level Info */
-.sea-level-info {
+/* Data Info Panel (Right side) */
+.data-info-panel {
     position: absolute;
     top: 100px;
     right: 20px;
-    width: 250px;
+    width: 280px;
     background: rgba(15, 23, 42, 0.95);
-    border: 1px solid #1e40af;
+    border: 1px solid #334155;
     border-radius: 8px;
     backdrop-filter: blur(20px);
     z-index: 300;
@@ -334,11 +341,11 @@ body {
     transition: all 0.5s ease-out;
 }
 
-.sea-level-info.active {
+.data-info-panel.active {
     transform: translateX(0);
 }
 
-.sea-level-header {
+.data-info-header {
     background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
     color: white;
     padding: 12px 16px;
@@ -347,24 +354,67 @@ body {
     border-radius: 8px 8px 0 0;
 }
 
-.sea-level-content {
+.data-info-content {
     padding: 16px;
 }
 
-.water-level-display {
+.data-source {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #334155;
+}
+
+.data-source:last-of-type {
+    border-bottom: none;
+    margin-bottom: 16px;
+}
+
+.source-name {
+    color: #cbd5e1;
+    font-size: 0.85rem;
+}
+
+.source-status {
+    color: #10b981;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.confidence-indicator {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #334155;
+}
+
+.confidence-label {
+    color: #cbd5e1;
+    font-size: 0.85rem;
+    margin-bottom: 8px;
+}
+
+.confidence-bar {
+    width: 100%;
+    height: 8px;
+    background: #334155;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.confidence-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+    width: 85%;
+    transition: width 0.3s ease;
+}
+
+.confidence-text {
+    color: #10b981;
+    font-size: 0.8rem;
+    font-weight: 600;
     text-align: center;
-    margin-bottom: 15px;
-}
-
-.water-level-value {
-    font-size: 2rem;
-    font-weight: bold;
-    color: #3b82f6;
-}
-
-.water-level-unit {
-    font-size: 0.9rem;
-    color: #64748b;
 }
 
 /* Timeline */
@@ -466,6 +516,15 @@ body {
     100% { transform: rotate(360deg); }
 }
 
+/* Panel visibility states */
+#currentWeatherPanel.active,
+#climateProjectionsPanel.active,
+#environmentalPanel.active,
+#riskAssessmentPanel.active {
+    display: block;
+    transform: translateX(0);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .main-title {
@@ -479,11 +538,31 @@ body {
         min-height: 80px;
     }
     
+    .climate-controls {
+        flex-wrap: wrap;
+        gap: 2px;
+    }
+    
+    .climate-btn {
+        font-size: 0.75rem;
+        padding: 8px 12px;
+    }
+    
     .climate-panel,
-    .sea-level-info {
+    .data-info-panel {
         width: calc(100% - 20px);
         left: 10px;
         right: 10px;
+    }
+    
+    .data-info-panel {
+        top: 180px;
+        left: 10px;
+        transform: translateY(-100%);
+    }
+    
+    .data-info-panel.active {
+        transform: translateY(0);
     }
     
     .timeline-controller {
