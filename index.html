@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Genmap - Climate Impact Visualizer</title>
+    <title>Climap - Climate Impact Visualizer</title>
     <link rel="stylesheet" href="css/main.css">
     <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
@@ -12,7 +12,7 @@
     <div class="welcome-screen" id="welcomeScreen">
         <div class="climate-visualization"></div>
         <div class="welcome-content">
-            <h1 class="main-title">Genmap</h1>
+            <h1 class="main-title">Climap</h1>
             <p class="climate-subtitle">Climate Impact Visualizer</p>
             <p class="description">
                 Explore the future of our planet with advanced 3D climate modeling.
@@ -31,46 +31,135 @@
         <header class="control-header">
             <div class="logo-section">
                 <a href="#" class="header-logo" id="logoLink">Genmap</a>
-                <div class="climate-indicator">Climate Emergency</div>
+                <div class="climate-indicator">Climate Visualizer</div>
             </div>
             <div class="search-section">
                 <input type="text" class="header-search" id="headerSearch" 
                        placeholder="Search location for climate analysis...">
             </div>
             <div class="climate-controls">
-                <button class="climate-btn active" id="seaLevelBtn">Sea Level</button>
-                <button class="climate-btn" id="temperatureBtn">Temperature</button>
-                <button class="climate-btn" id="precipitationBtn">Precipitation</button>
-                <button class="climate-btn" id="extremeBtn">Extreme Events</button>
+                <button class="climate-btn active" id="currentWeatherBtn">Current Weather</button>
+                <button class="climate-btn" id="climateProjectionsBtn">Climate Future</button>
+                <button class="climate-btn" id="environmentalBtn">Environmental</button>
+                <button class="climate-btn" id="riskAssessmentBtn">Risk Assessment</button>
             </div>
         </header>
 
         <!-- 3D Scene Container -->
         <div id="scene-container"></div>
 
-        <!-- Climate Data Panel -->
-        <div class="climate-panel" id="climatePanel">
-            <div class="panel-header">Climate Impact Analysis</div>
+        <!-- Current Weather Panel -->
+        <div class="climate-panel" id="currentWeatherPanel">
+            <div class="panel-header">Current Weather Conditions</div>
             <div class="panel-content">
                 <div class="climate-metric">
-                    <span class="metric-label">Current Temperature</span>
-                    <span class="metric-value warning" id="currentTemp">Loading...</span>
+                    <span class="metric-label">Temperature</span>
+                    <span class="metric-value" id="realTemp">Loading...</span>
                 </div>
                 <div class="climate-metric">
-                    <span class="metric-label">Weather Conditions</span>
-                    <span class="metric-value" id="weatherConditions">-</span>
+                    <span class="metric-label">Conditions</span>
+                    <span class="metric-value" id="realConditions">-</span>
                 </div>
                 <div class="climate-metric">
                     <span class="metric-label">Humidity</span>
-                    <span class="metric-value" id="humidity">-</span>
+                    <span class="metric-value" id="realHumidity">-</span>
                 </div>
                 <div class="climate-metric">
-                    <span class="metric-label">Sea Level Rise</span>
-                    <span class="metric-value danger" id="seaLevelRise">+0.85m</span>
+                    <span class="metric-label">Wind Speed</span>
+                    <span class="metric-value" id="realWindSpeed">-</span>
                 </div>
                 <div class="climate-metric">
-                    <span class="metric-label">Risk Level</span>
-                    <span class="metric-value danger" id="riskLevel">Critical</span>
+                    <span class="metric-label">Pressure</span>
+                    <span class="metric-value" id="realPressure">-</span>
+                </div>
+                <div class="climate-metric">
+                    <span class="metric-label">Feels Like</span>
+                    <span class="metric-value" id="realFeelsLike">-</span>
+                </div>
+                <div class="climate-metric">
+                    <span class="metric-label">UV Index</span>
+                    <span class="metric-value" id="realUVIndex">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Climate Projections Panel -->
+        <div class="climate-panel" id="climateProjectionsPanel" style="display: none;">
+            <div class="panel-header">Climate Future Projections</div>
+            <div class="panel-content">
+                <div class="climate-metric">
+                    <span class="metric-label">Temperature Rise by 2050</span>
+                    <span class="metric-value danger" id="futureTemp">+2.4°C</span>
+                </div>
+                <div class="climate-metric">
+                    <span class="metric-label">Sea Level Rise by 2050</span>
+                    <span class="metric-value danger" id="futureSeaLevel">+0.85m</span>
+                </div>
+                <div class="climate-metric">
+                    <span class="metric-label">Extreme Heat Days</span>
+                    <span class="metric-value warning" id="heatDays">+45 days/year</span>
+                </div>
+                <div class="climate-metric">
+                    <span class="metric-label">Precipitation Change</span>
+                    <span class="metric-value warning" id="precipitationChange">-15%</span>
+                </div>
+                <div class="climate-metric">
+                    <span class="metric-label">Drought Risk</span>
+                    <span class="metric-value danger" id="droughtRisk">High</span>
+                </div>
+                <div class="climate-metric">
+                    <span class="metric-label">Climate Scenario</span>
+                    <span class="metric-value warning" id="climateScenario">RCP 4.5</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Environmental Panel -->
+        <div class="climate-panel" id="environmentalPanel" style="display: none;">
+            <div class="panel-header">Environmental Indicators</div>
+            <div class="panel-content">
+                <div class="climate-metric">
+                    <span class="metric-label">Air Quality Index</span>
+                    <span class="metric-value" id="airQuality">Loading...</span>
+                </div>
+                <div class="climate-metric">
+                    <span class="metric-label">CO₂ Concentration</span>
+                    <span class="metric-value danger" id="co2Level">421 ppm</span>
+                </div>
+                <div class="climate-metric">
+                    <span class="metric-label">Biodiversity Index</span>
+                    <span class="metric-value warning" id="biodiversityIndex">6.2/10</span>
+                </div>
+                <div class="climate-metric">
+                    <span class="metric-label">Forest Coverage</span>
+                    <span class="metric-value" id="forestCoverage">-2.3%/year</span>
+                </div>
+                <div class="climate-metric">
+                    <span class="metric-label">Water Quality</span>
+                    <span class="metric-value" id="waterQuality">Good</span>
+                </div>
+                <div class="climate-metric">
+                    <span class="metric-label">Urban Heat Island</span>
+                    <span class="metric-value warning" id="heatIsland">+3.2°C</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Risk Assessment Panel -->
+        <div class="climate-panel" id="riskAssessmentPanel" style="display: none;">
+            <div class="panel-header">Climate Risk Assessment</div>
+            <div class="panel-content">
+                <div class="climate-metric">
+                    <span class="metric-label">Overall Risk Level</span>
+                    <span class="metric-value danger" id="overallRisk">Critical</span>
+                </div>
+                <div class="climate-metric">
+                    <span class="metric-label">Flood Risk</span>
+                    <span class="metric-value danger" id="floodRisk">Very High</span>
+                </div>
+                <div class="climate-metric">
+                    <span class="metric-label">Wildfire Risk</span>
+                    <span class="metric-value warning" id="wildfireRisk">Moderate</span>
                 </div>
                 <div class="climate-metric">
                     <span class="metric-label">Affected Population</span>
@@ -80,24 +169,39 @@
                     <span class="metric-label">Economic Impact</span>
                     <span class="metric-value danger" id="economicImpact">$2.8B</span>
                 </div>
+                <div class="climate-metric">
+                    <span class="metric-label">Infrastructure Vulnerability</span>
+                    <span class="metric-value danger" id="infrastructureRisk">High</span>
+                </div>
             </div>
         </div>
 
-        <!-- Sea Level Info Panel -->
-        <div class="sea-level-info" id="seaLevelInfo">
-            <div class="sea-level-header">Sea Level Projection</div>
-            <div class="sea-level-content">
-                <div class="water-level-display">
-                    <div class="water-level-value" id="waterLevelValue">+0.85</div>
-                    <div class="water-level-unit">meters above current level</div>
+        <!-- Data Info Panel (Right side) -->
+        <div class="data-info-panel" id="dataInfoPanel">
+            <div class="data-info-header">Data Sources</div>
+            <div class="data-info-content">
+                <div class="data-source">
+                    <div class="source-name">Weather Data</div>
+                    <div class="source-status" id="weatherDataSource">Open-Meteo API</div>
                 </div>
-                <div class="climate-metric">
-                    <span class="metric-label">Scenario</span>
-                    <span class="metric-value warning" id="climateScenario">RCP 4.5</span>
+                <div class="data-source">
+                    <div class="source-name">Climate Models</div>
+                    <div class="source-status">IPCC AR6</div>
                 </div>
-                <div class="climate-metric">
-                    <span class="metric-label">Confidence</span>
-                    <span class="metric-value safe" id="confidence">High (87%)</span>
+                <div class="data-source">
+                    <div class="source-name">Air Quality</div>
+                    <div class="source-status" id="airQualitySource">Loading...</div>
+                </div>
+                <div class="data-source">
+                    <div class="source-name">Last Updated</div>
+                    <div class="source-status" id="lastUpdated">-</div>
+                </div>
+                <div class="confidence-indicator">
+                    <div class="confidence-label">Data Confidence</div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" id="confidenceFill"></div>
+                    </div>
+                    <div class="confidence-text" id="confidenceText">85%</div>
                 </div>
             </div>
         </div>
